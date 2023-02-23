@@ -434,7 +434,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             for (Process p : hitlist) {
                     String p_identifier = p.getTitel();
                     p_identifier = p_identifier.substring(0, p_identifier.lastIndexOf(processnameSeparator));
-                    if (p_identifier <> identifier) {
+                    if (!p_identifier.equals(identifier)) {
                         hitlist.remove(p);
                     }
             }
@@ -443,7 +443,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             for (Process p : hitlist) {
                     String p_identifier = p.getTitel();
                     p_identifier = p_identifier.substring(p_identifier.lastIndexOf(processnameSeparator) + 1, p_identifier.length());        
-                    if (p_identifier <> identifier) {
+                    if (!p_identifier.equals(identifier)) {
                         hitlist.remove(p);
                     }
                 }
