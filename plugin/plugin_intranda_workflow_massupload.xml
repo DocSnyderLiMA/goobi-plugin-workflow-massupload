@@ -16,16 +16,16 @@
 	<allowed-step>Scanning</allowed-step>
 	<allowed-step>Upload</allowed-step>
 
-	<!-- which part of the files shall be used to find the right process (prefix, suffix or complete) -->
+	<!-- define filename-identifier: which part of the file names shall be used to find the right process (prefix, suffix or complete) -->
 	<filename-part>prefix</filename-part>
 	<filename-separator>_</filename-separator>
-
-    <!-- define if the process title must contain the value or must match the exact title (contains or exact)  -->
-    <match-type>contains</match-type>
-
-    <!-- which part of the process title shall be used to match the right process (prefix, suffix or complete) -->
-    <maxNumberofProcesses-SearchResult>20</maxNumberofProcesses-SearchResult>
+	<!-- define process-identifier: which part of the process names shall be used to match the right process (prefix, suffix or complete) -->
     <processname-part>suffix</processname-part>
     <processname-separator>_</processname-separator>
-
+    
+    <!-- define if the process-identifier must contain the filename-identifier or must match the exact filename-identifier (contains or exact)  -->
+    <match-type>exact</match-type>
+	<!-- set the limit of search results within process query -->
+    <maxNumberofProcesses-SearchResult>20</maxNumberofProcesses-SearchResult>
+  
 </config_plugin>

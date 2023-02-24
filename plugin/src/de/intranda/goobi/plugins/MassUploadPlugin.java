@@ -82,7 +82,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private String allowedTypes;
     private String filenamePart;
     private String userFolderName;
-    private String processTitleMatchType;
+    private String p_f_identifier_MatchType;
     private String filenameSeparator;
     private Integer maxNumberofProcessesSearchResult;
     private String processnamePart;
@@ -110,7 +110,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         filenamePart = config.getString("filename-part", "prefix").toLowerCase();
         userFolderName = config.getString("user-folder-name", "mass_upload").toLowerCase();
         filenameSeparator = config.getString("filename-separator", "_").toLowerCase();
-        maxNumberofProcessesSearchResult = config.getInteger("maxNumberofProcesses-SearchResult", 10);
+        maxNumberofProcessesSearchResult = config.getInteger("maxNumberofProcesses-SearchResult", 25);
         processnamePart = config.getString("processname-part", "complete").toLowerCase();
         processnameSeparator = config.getString("processname-separator", "_").toLowerCase();
         stepTitles = Arrays.asList(config.getStringArray("allowed-step"));
@@ -119,7 +119,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         if (useBarcodes) {
             barcodePool = Executors.newFixedThreadPool(2);
         }
-        processTitleMatchType = config.getString("match-type", "contains");
+        p_f_identifier_MatchType = config.getString("match-type", "contains");
 
     }
 
@@ -392,35 +392,35 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      */
     private void assignProcessByFilename(MassUploadedFile uploadedFile, Map<String, List<Process>> searchCache) {
         // get the relevant part of the file name
-        String identifier = uploadedFile.getFilename().substring(0, uploadedFile.getFilename().lastIndexOf("."));
-        if (filenamePart.equals("prefix") && identifier.contains(filenameSeparator)) {
-            identifier = identifier.substring(0, identifier.lastIndexOf(filenameSeparator));
+        String f_identifier = uploadedFile.getFilename().substring(0, uploadedFile.getFilename().lastIndexOf("."));
+        if (filenamePart.equals("prefix") && f_identifier .contains(filenameSeparator)) {
+            f_identifier = f_identifier .substring(0, f_identifier .lastIndexOf(filenameSeparator));
         }
-        if (filenamePart.equals("suffix") && identifier.contains(filenameSeparator)) {
-            identifier = identifier.substring(identifier.lastIndexOf(filenameSeparator) + 1, identifier.length());
+        if (filenamePart.equals("suffix") && f_identifier .contains(filenameSeparator)) {
+            f_identifier = f_identifier .substring(f_identifier .lastIndexOf(filenameSeparator) + 1, f_identifier .length());
         }
 
-        assignProcess(uploadedFile, searchCache, identifier);
+        assignProcess(uploadedFile, searchCache, f_identifier );
     }
 
-    public void assignProcess(MassUploadedFile uploadedFile, Map<String, List<Process>> searchCache, String identifier) {
+    public void assignProcess(MassUploadedFile uploadedFile, Map<String, List<Process>> searchCache, String f_identifier ) {
         // get all matching processes
         // first try to get this from the cache
         List<Process> hitlist = null;
-        if ("exact".equals(processTitleMatchType)) {
-            hitlist = searchCache == null ? null : searchCache.get(identifier);
+        if ("exact".equals(p_f_identifier_MatchType) && processnamePart.equals("complete")) {
+            hitlist = searchCache == null ? null : searchCache.get(f_identifier );
             if (hitlist == null) {
-                Process p = ProcessManager.getProcessByExactTitle(identifier);
+                Process p = ProcessManager.getProcessByExactTitle(f_identifier );
                 if (p != null) {
                     hitlist = new ArrayList<>();
                     hitlist.add(p);
                     if (searchCache != null) {
-                        searchCache.put(identifier, hitlist);
+                        searchCache.put(f_identifier , hitlist);
                     }
                 }
             }
-        } else {
-            String filter = FilterHelper.criteriaBuilder(identifier, false, null, null, null, true, false);
+        } else { //get all processes by title where the title contains the f_identifier 
+            String filter = FilterHelper.criteriaBuilder(f_identifier , false, null, null, null, true, false);
             hitlist = searchCache == null ? null : searchCache.get(filter);
             if (hitlist == null) {
                 // there was no result in the cache. Get result from the DB and then add it to the cache.
@@ -430,20 +430,30 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 }
             }
         }
-      //check process hitlist containing assigned processes and only allow matches given by suffix or prefix
+      //check process hitlist containing assigned processes and only allow matches given by suffix or prefix and match type
       if (!(hitlist == null || hitlist.isEmpty())) {
 	       if (processnamePart.equals("prefix")) {
-	    	   hitlist.removeIf(process -> !process.getTitel().split(processnameSeparator)[0].equals(identifier));
+	    	   if ("exact".equals(p_f_identifier_MatchType)) {
+	    		   hitlist.removeIf(process -> !process.getTitel().split(processnameSeparator)[0].equals(f_identifier));
+	    	   }
+	    	   else {
+	    		   hitlist.removeIf(process -> !process.getTitel().split(processnameSeparator)[0].contains(f_identifier));
+	    	   }
 	        }
 	        if (processnamePart.equals("suffix")) {
-	        	hitlist.removeIf(process -> !process.getTitel().split(processnameSeparator)[1].equals(identifier));
+	        	 if ("exact".equals(p_f_identifier_MatchType)) {
+		    		   hitlist.removeIf(process -> !process.getTitel().split(processnameSeparator)[1].equals(f_identifier));
+		    	   }
+		    	   else {
+		    		   hitlist.removeIf(process -> !process.getTitel().split(processnameSeparator)[1].contains(f_identifier));
+		    	   }
 	        }
         }
         
         // if list is empty
         if (hitlist == null || hitlist.isEmpty()) {
             uploadedFile.setStatus(MassUploadedFileStatus.ERROR);
-            uploadedFile.setStatusmessage("No matching process found for this image while max. number of processes within search results " + maxNumberofProcessesSearchResult);
+            uploadedFile.setStatusmessage("No matching process found for this image with f_identifier '" + f_identifier + "', MatchType '" + p_f_identifier_MatchType + "' and max. number of processes within search results is " + maxNumberofProcessesSearchResult);
         } else {
             // if list is bigger then one hit
             if (hitlist.size() > 1) {
@@ -452,7 +462,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                     processtitles += process.getTitel() + ", ";
                 }
                 uploadedFile.setStatus(MassUploadedFileStatus.ERROR);
-                uploadedFile.setStatusmessage("More than one matching process where found for this image: " + processtitles);
+                uploadedFile.setStatusmessage("More than one matching processes were found for this image: " + processtitles);
             } else {
                 // we have just one hit and take it
                 Process p = hitlist.get(0);
