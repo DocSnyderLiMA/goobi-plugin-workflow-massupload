@@ -6,7 +6,9 @@
   <packaging>pom</packaging>
   <properties>
     <goobi.version>23.01.2</goobi.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
+
   <distributionManagement>
     <repository>
       <id>intranda-releases</id>
@@ -42,5 +44,5 @@
       <version>4.13.1</version>
       <scope>test</scope>
     </dependency>
-  </dependencies>
+  </dependencies>  
 </project>

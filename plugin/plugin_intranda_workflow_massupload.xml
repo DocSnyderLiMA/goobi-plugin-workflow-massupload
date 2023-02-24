@@ -24,6 +24,7 @@
     <match-type>contains</match-type>
 
     <!-- which part of the process title shall be used to match the right process (prefix, suffix or complete) -->
+    <maxNumberofProcesses-SearchResult>20</maxNumberofProcesses-SearchResult>
     <processname-part>suffix</processname-part>
     <processname-separator>_</processname-separator>
 

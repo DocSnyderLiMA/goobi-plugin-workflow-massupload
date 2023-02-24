@@ -84,6 +84,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private String userFolderName;
     private String processTitleMatchType;
     private String filenameSeparator;
+    private Integer maxNumberofProcessesSearchResult;
     private String processnamePart;
     private String processnameSeparator;
     private List<String> stepTitles;
@@ -109,8 +110,9 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         filenamePart = config.getString("filename-part", "prefix").toLowerCase();
         userFolderName = config.getString("user-folder-name", "mass_upload").toLowerCase();
         filenameSeparator = config.getString("filename-separator", "_").toLowerCase();
-        processnamePart = ConfigPlugins.getPluginConfig(this).getString("processname-part", "complete").toLowerCase();
-        processnameSeparator = ConfigPlugins.getPluginConfig(this).getString("processname-separator", "_").toLowerCase();
+        maxNumberofProcessesSearchResult = config.getInteger("maxNumberofProcesses-SearchResult", 10);
+        processnamePart = config.getString("processname-part", "complete").toLowerCase();
+        processnameSeparator = config.getString("processname-separator", "_").toLowerCase();
         stepTitles = Arrays.asList(config.getStringArray("allowed-step"));
         copyImagesViaGoobiScript = config.getBoolean("copy-images-using-goobiscript", false);
         useBarcodes = config.getBoolean("use-barcodes", false);
@@ -422,38 +424,31 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             hitlist = searchCache == null ? null : searchCache.get(filter);
             if (hitlist == null) {
                 // there was no result in the cache. Get result from the DB and then add it to the cache.
-                hitlist = ProcessManager.getProcesses("prozesse.titel", filter, 0, 5);
+                hitlist = ProcessManager.getProcesses("prozesse.titel", filter, 0, maxNumberofProcessesSearchResult);
                 if (searchCache != null) {
                     searchCache.put(filter, hitlist);
                 }
             }
         }
-        
-        //check hitlist containing assigned processes and filter them if configured by suffix or prefix
-        if (processnamePart.equals("prefix") && identifier.contains(processnameSeparator)) {
-            for (Process p : hitlist) {
-                    String p_identifier = p.getTitel();
-                    p_identifier = p_identifier.substring(0, p_identifier.lastIndexOf(processnameSeparator));
-                    if (!p_identifier.equals(identifier)) {
-                        hitlist.remove(p);
-                    }
-            }
+      Integer processL = hitlist.size();
+      String processLtitles = "";
+      for (Process process : hitlist) {
+    	  processLtitles += process.getTitel() + ", ";
+      }
+      //check process hitlist containing assigned processes and only allow matches given by suffix or prefix
+      if (!(hitlist == null || hitlist.isEmpty())) {
+	       if (processnamePart.equals("prefix")) {
+	    	   hitlist.removeIf(process -> !process.getTitel().split(processnameSeparator)[0].equals(identifier));
+	        }
+	        if (processnamePart.equals("suffix")) {
+	        	hitlist.removeIf(process -> !process.getTitel().split(processnameSeparator)[1].equals(identifier));
+	        }
         }
-        if (processnamePart.equals("suffix") && identifier.contains(processnameSeparator)) {
-            for (Process p : hitlist) {
-                    String p_identifier = p.getTitel();
-                    p_identifier = p_identifier.substring(p_identifier.lastIndexOf(processnameSeparator) + 1, p_identifier.length());        
-                    if (!p_identifier.equals(identifier)) {
-                        hitlist.remove(p);
-                    }
-                }
-        }
-        
         
         // if list is empty
         if (hitlist == null || hitlist.isEmpty()) {
             uploadedFile.setStatus(MassUploadedFileStatus.ERROR);
-            uploadedFile.setStatusmessage("No matching process found for this image.");
+            uploadedFile.setStatusmessage("No matching process found for this image with max. number of search results " + maxNumberofProcessesSearchResult);
         } else {
             // if list is bigger then one hit
             if (hitlist.size() > 1) {
