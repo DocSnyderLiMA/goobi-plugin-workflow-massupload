@@ -430,11 +430,6 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 }
             }
         }
-      Integer processL = hitlist.size();
-      String processLtitles = "";
-      for (Process process : hitlist) {
-    	  processLtitles += process.getTitel() + ", ";
-      }
       //check process hitlist containing assigned processes and only allow matches given by suffix or prefix
       if (!(hitlist == null || hitlist.isEmpty())) {
 	       if (processnamePart.equals("prefix")) {
@@ -448,7 +443,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         // if list is empty
         if (hitlist == null || hitlist.isEmpty()) {
             uploadedFile.setStatus(MassUploadedFileStatus.ERROR);
-            uploadedFile.setStatusmessage("No matching process found for this image with max. number of search results " + maxNumberofProcessesSearchResult);
+            uploadedFile.setStatusmessage("No matching process found for this image while max. number of processes within search results " + maxNumberofProcessesSearchResult);
         } else {
             // if list is bigger then one hit
             if (hitlist.size() > 1) {
